@@ -296,7 +296,9 @@ See the `examples/` directory for comprehensive usage examples:
 
 ## 📖 Documentation
 
-📖 **Full Documentation**: [https://hsliuustc.github.io/nano-qwen3-serving/](https://hsliuustc.github.io/nano-qwen3-serving/)
+📖 **Full Documentation**: [https://nano-qwen3-serving.readthedocs.io/](https://nano-qwen3-serving.readthedocs.io/)
+
+🌐 **Alternative**: [GitHub Pages](https://hsliuustc.github.io/nano-qwen3-serving/)
 
 - **[Quick Start](docs/getting-started/quick-start.md)**: Get up and running in minutes
 - **[Installation](docs/getting-started/installation.md)**: Detailed installation guide

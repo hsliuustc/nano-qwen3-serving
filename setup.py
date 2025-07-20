@@ -28,7 +28,7 @@ setup(
     project_urls={
         "Bug Reports": "https://github.com/hsliuustc/nano-qwen3-serving/issues",
         "Source": "https://github.com/hsliuustc/nano-qwen3-serving",
-        "Documentation": "https://github.com/hsliuustc/nano-qwen3-serving#readme",
+        "Documentation": "https://nano-qwen3-serving.readthedocs.io/",
     },
     packages=find_packages(),
     classifiers=[
@@ -61,9 +61,10 @@ setup(
             "pre-commit>=3.0.0",
         ],
         "docs": [
-            "sphinx>=6.0.0",
-            "sphinx-rtd-theme>=1.2.0",
-            "myst-parser>=1.0.0",
+            "mkdocs>=1.6.0",
+            "mkdocs-material>=9.6.0",
+            "mkdocstrings[python]>=0.29.0",
+            "mkdocs-autorefs>=1.4.0",
         ],
     },
     entry_points={

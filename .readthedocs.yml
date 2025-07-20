@@ -1,0 +1,24 @@
+version: 2
+
+# Build documentation with MkDocs (primary)
+mkdocs:
+  configuration: mkdocs.yml
+
+# Alternative: Build with Sphinx
+sphinx:
+  configuration: docs/conf.py
+
+# Python version and dependencies
+python:
+  version: "3.11"
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
+  system_packages: true
+
+# Build additional formats
+formats:
+  - pdf
+  - epub 
