@@ -33,7 +33,7 @@ We welcome various types of contributions:
 
 ```bash
 # Fork and clone the repository
-git clone https://github.com/yourusername/nano-qwen3-serving.git
+git clone https://github.com/hsliuustc/nano-qwen3-serving.git
 cd nano-qwen3-serving
 
 # Create a virtual environment

@@ -29,7 +29,7 @@ A high-performance, OpenAI-compatible API server for the nano Qwen3 serving engi
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/nano-qwen3-serving.git
+git clone https://github.com/hsliuustc/nano-qwen3-serving.git
 cd nano-qwen3-serving
 
 # Install dependencies
@@ -381,7 +381,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ```bash
 # Clone and setup
-git clone https://github.com/yourusername/nano-qwen3-serving.git
+git clone https://github.com/hsliuustc/nano-qwen3-serving.git
 cd nano-qwen3-serving
 
 # Install development dependencies
@@ -410,12 +410,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - 📧 Email: your-email@example.com
-- 💬 Discussions: [GitHub Discussions](https://github.com/yourusername/nano-qwen3-serving/discussions)
-- 🐛 Issues: [GitHub Issues](https://github.com/yourusername/nano-qwen3-serving/issues)
+- 💬 Discussions: [GitHub Discussions](https://github.com/hsliuustc/nano-qwen3-serving/discussions)
+- 🐛 Issues: [GitHub Issues](https://github.com/hsliuustc/nano-qwen3-serving/issues)
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/nano-qwen3-serving&type=Date)](https://star-history.com/#yourusername/nano-qwen3-serving&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=hsliuustc/nano-qwen3-serving&type=Date)](https://star-history.com/#hsliuustc/nano-qwen3-serving&Date)
 
 ---
 

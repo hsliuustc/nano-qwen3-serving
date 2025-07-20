@@ -19,16 +19,16 @@ def read_requirements():
 setup(
     name="nano-qwen3-serving",
     version="0.1.0",
-    author="Your Name",
-    author_email="your-email@example.com",
+    author="hsliuustc",
+    author_email="hsliuustc@gmail.com",
     description="A high-performance, OpenAI-compatible API server for Qwen3 models on Apple Silicon",
     long_description=read_readme(),
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/nano-qwen3-serving",
+    url="https://github.com/hsliuustc/nano-qwen3-serving",
     project_urls={
-        "Bug Reports": "https://github.com/yourusername/nano-qwen3-serving/issues",
-        "Source": "https://github.com/yourusername/nano-qwen3-serving",
-        "Documentation": "https://github.com/yourusername/nano-qwen3-serving#readme",
+        "Bug Reports": "https://github.com/hsliuustc/nano-qwen3-serving/issues",
+        "Source": "https://github.com/hsliuustc/nano-qwen3-serving",
+        "Documentation": "https://github.com/hsliuustc/nano-qwen3-serving#readme",
     },
     packages=find_packages(),
     classifiers=[
