@@ -313,23 +313,129 @@ class ModelRunner:
         logger.info("Performance statistics cleared")
     
     def optimize_for_inference(self) -> None:
-        """Apply optimizations for inference."""
+        """Apply optimizations for inference performance."""
         if self.model is None:
             return
         
-        # Enable torch.compile if available (PyTorch 2.0+)
+        logger.info("Applying inference optimizations...")
+        
+        # 1. Enable torch.compile for faster inference (PyTorch 2.0+)
         try:
             if hasattr(torch, 'compile'):
                 self.model = torch.compile(self.model, mode="reduce-overhead")
                 logger.info("Applied torch.compile optimization")
         except Exception as e:
-            logger.warning(f"Could not apply torch.compile: {e}")
+            logger.warning(f"torch.compile not available: {e}")
         
-        # Set model to evaluation mode
+        # 2. Enable memory efficient attention if available
+        try:
+            if hasattr(self.model.config, 'use_memory_efficient_attention'):
+                self.model.config.use_memory_efficient_attention = True
+                logger.info("Enabled memory efficient attention")
+        except Exception as e:
+            logger.warning(f"Memory efficient attention not available: {e}")
+        
+        # 3. Set model to inference mode
         self.model.eval()
         
-        # Optimize memory usage
+        # 4. Enable gradient checkpointing for memory efficiency
+        if hasattr(self.model, 'gradient_checkpointing_enable'):
+            self.model.gradient_checkpointing_enable()
+            logger.info("Enabled gradient checkpointing")
+        
+        # 5. Optimize for MPS specific optimizations
+        if self.device == "mps":
+            self._optimize_for_mps()
+    
+    def _optimize_for_mps(self) -> None:
+        """Apply MPS-specific optimizations."""
+        # Enable MPS optimizations
+        if hasattr(torch.mps, 'set_per_process_memory_fraction'):
+            torch.mps.set_per_process_memory_fraction(0.9)  # Use 90% of GPU memory
+        
+        # Set optimal memory format for MPS
         if hasattr(self.model, 'half'):
             self.model = self.model.half()
         
-        logger.info("Applied inference optimizations") 
+        logger.info("Applied MPS-specific optimizations")
+    
+    def enable_fast_inference(self) -> None:
+        """Enable fast inference mode with aggressive optimizations."""
+        if self.model is None:
+            return
+        
+        logger.info("Enabling fast inference mode...")
+        
+        # 1. Use torch.inference_mode() for maximum performance
+        self.inference_mode = torch.inference_mode()
+        
+        # 2. Disable gradient computation
+        for param in self.model.parameters():
+            param.requires_grad = False
+        
+        # 3. Use channels_last memory format for better performance
+        try:
+            self.model = self.model.to(memory_format=torch.channels_last)
+            logger.info("Applied channels_last memory format")
+        except Exception as e:
+            logger.warning(f"Could not apply channels_last: {e}")
+        
+        # 4. Enable flash attention if available
+        try:
+            if hasattr(self.model.config, 'use_flash_attention_2'):
+                self.model.config.use_flash_attention_2 = True
+                logger.info("Enabled Flash Attention 2")
+        except Exception as e:
+            logger.warning(f"Flash Attention 2 not available: {e}")
+    
+    def run_model_batch(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: Optional[torch.Tensor] = None,
+        past_key_values: Optional[List[Tuple[torch.Tensor, torch.Tensor]]] = None,
+        use_cache: Optional[bool] = None
+    ) -> Dict[str, Any]:
+        """
+        Run batched forward pass through the model.
+        
+        Args:
+            input_ids: Input token IDs (batch_size, seq_len)
+            attention_mask: Attention mask
+            past_key_values: Previous key-value pairs for caching
+            use_cache: Whether to use KV cache
+            
+        Returns:
+            Model outputs including logits and new key-value pairs
+        """
+        if use_cache is None:
+            use_cache = self.cache_enabled
+        
+        start_time = time.time()
+        
+        try:
+            with torch.inference_mode():
+                outputs = self.model(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    past_key_values=past_key_values,
+                    use_cache=use_cache,
+                    return_dict=True
+                )
+            
+            inference_time = time.time() - start_time
+            self.inference_times.append(inference_time)
+            
+            # Update statistics
+            self.tokens_generated += input_ids.shape[1]
+            
+            logger.debug(f"Batch inference completed in {inference_time:.4f}s (batch_size={input_ids.shape[0]})")
+            
+            return {
+                "logits": outputs.logits,
+                "past_key_values": outputs.past_key_values,
+                "inference_time": inference_time
+            }
+            
+        except Exception as e:
+            logger.error(f"Batch model inference failed: {e}")
+            raise 

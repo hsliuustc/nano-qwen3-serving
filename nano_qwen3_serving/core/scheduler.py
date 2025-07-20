@@ -133,6 +133,85 @@ class Scheduler:
         logger.debug(f"Scheduled {len(requests)} requests for processing")
         return requests
     
+    def get_next_batch(
+        self, 
+        max_batch_size: int = 8, 
+        max_wait_time: float = 0.01,
+        max_seq_length_diff: int = 512
+    ) -> List[Request]:
+        """
+        Get a batch of requests for efficient processing.
+        
+        Args:
+            max_batch_size: Maximum number of requests in batch
+            max_wait_time: Maximum time to wait for batching (seconds)
+            max_seq_length_diff: Maximum difference in sequence lengths for batching
+            
+        Returns:
+            List of requests to process as a batch
+        """
+        batch = []
+        start_time = time.time()
+        
+        # Remove expired requests first
+        current_time = time.time()
+        self._remove_expired_requests(current_time)
+        
+        # Get first request to establish baseline
+        if not self.request_queue:
+            return batch
+        
+        first_request = heapq.heappop(self.request_queue)
+        batch.append(first_request)
+        self.active_requests[first_request.request_id] = first_request
+        
+        # Estimate sequence length for first request
+        first_seq_len = len(first_request.prompt.split())  # Rough estimate
+        
+        # Try to add more requests to the batch
+        temp_queue = []
+        while (len(batch) < max_batch_size and 
+               self.request_queue and 
+               (time.time() - start_time) < max_wait_time):
+            
+            request = heapq.heappop(self.request_queue)
+            
+            # Check if request has expired
+            if current_time - request.created_at > request.max_wait_time:
+                logger.warning(f"Request {request.request_id} expired during batching")
+                self.failed_requests_count += 1
+                continue
+            
+            # Estimate sequence length for this request
+            seq_len = len(request.prompt.split())
+            
+            # Check if this request can be batched (similar sequence length)
+            if abs(seq_len - first_seq_len) <= max_seq_length_diff:
+                batch.append(request)
+                self.active_requests[request.request_id] = request
+            else:
+                # Put back in queue for next batch
+                temp_queue.append(request)
+        
+        # Put back requests that didn't fit in this batch
+        for request in temp_queue:
+            heapq.heappush(self.request_queue, request)
+        
+        logger.debug(f"Created batch of {len(batch)} requests (waited {time.time() - start_time:.3f}s)")
+        return batch
+    
+    def get_batch_stats(self) -> Dict[str, Any]:
+        """Get batch processing statistics."""
+        return {
+            "queue_size": len(self.request_queue),
+            "active_requests": len(self.active_requests),
+            "completed_requests": self.completed_requests_count,
+            "failed_requests": self.failed_requests_count,
+            "total_requests": self.total_requests,
+            "average_wait_time": self._calculate_average_wait_time(),
+            "queue_utilization": len(self.request_queue) / self.max_queue_size if self.max_queue_size > 0 else 0
+        }
+    
     def mark_request_completed(self, request_id: int, result: Any) -> None:
         """
         Mark a request as completed.
