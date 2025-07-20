@@ -1,0 +1,168 @@
+site_name: Nano Qwen3 Serving
+site_description: High-performance OpenAI-compatible API server for Qwen3 models on Apple Silicon
+site_author: hsliuustc
+site_url: https://hsliuustc.github.io/nano-qwen3-serving/
+
+repo_name: hsliuustc/nano-qwen3-serving
+repo_url: https://github.com/hsliuustc/nano-qwen3-serving
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+  features:
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.code.select
+    - content.tabs.link
+    - content.tooltips
+    - header.autohide
+    - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.instant.result
+    - navigation.instant.suggest
+    - navigation.instant.tracking
+    - navigation.instant.worker
+    - navigation.instant.worker.offline
+    - navigation.prune
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [nano_qwen3_serving]
+          options:
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+            show_signature_annotations: true
+            show_bases: true
+            show_submodules: true
+            heading_level: 2
+            members_order: source
+            docstring_style: google
+            preload_modules: true
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/hsliuustc/nano-qwen3-serving
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/hsliuustc
+  version:
+    provider: mike
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: getting-started/quick-start.md
+    - Installation: getting-started/installation.md
+    - Configuration: getting-started/configuration.md
+  - User Guide:
+    - Basic Usage: user-guide/basic-usage.md
+    - API Reference: user-guide/api-reference.md
+    - Streaming: user-guide/streaming.md
+    - Models: user-guide/models.md
+  - API Documentation:
+    - Server API: api/server.md
+    - Chat Completions: api/chat-completions.md
+    - Models API: api/models.md
+    - Health Check: api/health.md
+  - Development:
+    - Architecture: development/architecture.md
+    - Contributing: development/contributing.md
+    - Testing: development/testing.md
+  - Troubleshooting:
+    - Common Issues: troubleshooting/common-issues.md
+    - Performance: troubleshooting/performance.md
+    - Debugging: troubleshooting/debugging.md
+  - Examples:
+    - Basic Examples: examples/basic-examples.md
+    - Advanced Examples: examples/advanced-examples.md
+    - Client Libraries: examples/client-libraries.md
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
