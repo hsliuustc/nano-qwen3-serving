@@ -142,10 +142,14 @@ nav:
     - Streaming: user-guide/streaming.md
     - Models: user-guide/models.md
   - API Documentation:
-    - Server API: api/server.md
-    - Chat Completions: api/chat-completions.md
-    - Models API: api/models.md
-    - Health Check: api/health.md
+    - Overview: api/README.md
+    - Quick Reference: api/quick-reference.md
+    - Core Components: api/core-components.md
+    - Async Components: api/async-components.md
+    - HTTP API: api/http-api.md
+    - Usage Examples: api/usage-examples.md
+    - Service Configuration: api/service-configuration.md
+    - Complete Reference: api/complete-api-reference.md
   - Development:
     - Architecture: development/architecture.md
     - Contributing: development/contributing.md

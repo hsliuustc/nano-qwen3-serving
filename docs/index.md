@@ -150,3 +150,16 @@ This project is licensed under the MIT License - see the [LICENSE](https://githu
 [GitHub](https://github.com/hsliuustc/nano-qwen3-serving) • [Issues](https://github.com/hsliuustc/nano-qwen3-serving/issues) • [Discussions](https://github.com/hsliuustc/nano-qwen3-serving/discussions)
 
 </div>
+
+## 📖 Comprehensive API Documentation
+
+For detailed API documentation covering all public APIs, functions, and components:
+
+- **[Complete API Documentation](api/README.md)** - Overview and navigation
+- **[Core Components](api/core-components.md)** - LLM class and SamplingParams
+- **[Async Components](api/async-components.md)** - AsyncLLM and concurrent processing
+- **[HTTP API](api/http-api.md)** - OpenAI-compatible REST endpoints
+- **[Usage Examples](api/usage-examples.md)** - Practical examples and patterns
+- **[Service Configuration](api/service-configuration.md)** - Deployment and configuration
+- **[Complete API Reference](api/complete-api-reference.md)** - Full API reference
+
