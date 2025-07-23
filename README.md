@@ -1,6 +1,6 @@
 # 🚀 Nano Qwen3 Serving
 
-A high-performance, OpenAI-compatible API server for the nano Qwen3 serving engine, optimized for Apple Silicon (MPS) and designed for efficient local LLM inference.
+A high-performance, OpenAI-compatible API server for the nano Qwen3 serving engine, supporting multiple backends (CUDA, MPS, CPU) for efficient local LLM inference.
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,7 +10,7 @@ A high-performance, OpenAI-compatible API server for the nano Qwen3 serving engi
 
 - **🚀 OpenAI-Compatible API**: Drop-in replacement for OpenAI API
 - **⚡ Real-time Streaming**: Server-sent events for live token generation
-- **🍎 Apple Silicon Optimized**: Native MPS acceleration for maximum performance
+- **🔧 Multi-Backend Support**: CUDA (NVIDIA), MPS (Apple Silicon), CPU
 - **🎯 High Performance**: Efficient memory management and request batching
 - **🔧 Multiple Models**: Support for various Qwen3 model sizes
 - **📊 Health Monitoring**: Built-in health checks and performance statistics
@@ -22,7 +22,9 @@ A high-performance, OpenAI-compatible API server for the nano Qwen3 serving engi
 ### Prerequisites
 
 - Python 3.8+
-- Apple Silicon Mac (M1/M2/M3) with macOS 12.3+
+- **CUDA**: NVIDIA GPU with CUDA support
+- **MPS**: Apple Silicon Mac (M1/M2/M3) with macOS 12.3+
+- **CPU**: Any system with sufficient RAM
 - 8GB+ RAM (16GB+ recommended)
 
 ### Installation
@@ -39,14 +41,19 @@ pip install -r requirements.txt
 ### Start the Service
 
 ```bash
-# Start with default settings (Qwen3-0.6B on MPS)
+# Start with auto-detection (recommended)
 python tools/start_service.py
+
+# Start with specific device
+python tools/start_service.py --device cuda
+python tools/start_service.py --device mps
+python tools/start_service.py --device cpu
 
 # Start on custom port
 python tools/start_service.py --port 8001
 
 # Start with different model
-python tools/start_service.py --model Qwen/Qwen3-1.5B --device mps
+python tools/start_service.py --model Qwen/Qwen3-1.5B --device auto
 ```
 
 ### Test the API
@@ -265,26 +272,47 @@ The service uses efficient block-based memory management:
 ## 🛠️ Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   FastAPI       │    │   OpenAI        │    │   Core Engine   │
-│   Server        │◄──►│   Service       │◄──►│   (LLM)         │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   HTTP/WebSocket│    │   Request       │    │   Model Runner  │
-│   Endpoints     │    │   Processing    │    │   & Scheduler   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    API Layer                                    │
+├─────────────────────────────────────────────────────────────────┤
+│  FastAPI Server  │  OpenAI Service  │  AsyncLLM               │
+│  (HTTP/WebSocket)│  (Request/Resp)  │  (Async Interface)      │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Core Layer                                   │
+├─────────────────────────────────────────────────────────────────┤
+│  LLM (High-level)  │  LLMEngine (Orchestrator)  │  AsyncLLMEngine │
+│  (User Interface)  │  (Request Management)      │  (Async Engine) │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  Execution Layer                                │
+├─────────────────────────────────────────────────────────────────┤
+│  ModelRunner  │  DeviceManager  │  Scheduler  │  BlockManager   │
+│  (Inference)  │  (CUDA/MPS/CPU) │  (Queuing)  │  (Memory)       │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ### Core Components
 
-- **FastAPI Server**: HTTP/WebSocket endpoints
-- **OpenAI Service**: Request/response handling
-- **LLM Engine**: Core inference engine
-- **Model Runner**: Model execution
-- **Scheduler**: Request queuing and scheduling
-- **Block Manager**: Memory management
+#### **API Layer**
+- **FastAPI Server**: HTTP/WebSocket endpoints (`/v1/chat/completions`, `/v1/completions`)
+- **OpenAI Service**: OpenAI-compatible request/response handling
+- **AsyncLLM**: High-level async interface for concurrent processing
+
+#### **Core Layer**
+- **LLM**: High-level synchronous interface for text generation
+- **LLMEngine**: Core orchestrator managing requests, batching, and inference
+- **AsyncLLMEngine**: Async wrapper for concurrent request handling
+
+#### **Execution Layer**
+- **ModelRunner**: Model execution and inference on multiple backends
+- **DeviceManager**: Multi-backend support (CUDA, MPS, CPU) with auto-detection
+- **Scheduler**: Request queuing, prioritization, and batch scheduling
+- **BlockManager**: Efficient KV cache memory management
 
 ## 📚 Examples
 

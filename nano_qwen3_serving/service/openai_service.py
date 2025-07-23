@@ -24,8 +24,8 @@ class OpenAICompatibleService:
     
     def __init__(
         self,
-        model_name: str = "Qwen/Qwen3-0.6B",
-        device: str = "mps",
+        model_name: str = "/zx_data1/nano-vllm/models/Qwen3-0.6B",  # "Qwen/Qwen3-0.6B",
+        device: str = "cuda",
         dtype: str = "float16",
         max_queue_size: int = 1000,
         num_blocks: int = 1024,
@@ -305,14 +305,31 @@ class OpenAICompatibleService:
 # Global service instance
 service: Optional[OpenAICompatibleService] = None
 
+# Global configuration
+service_config = {
+    "model_name": "/zx_data1/nano-vllm/models/Qwen3-0.6B",
+    "device": "auto",
+    "dtype": "float16",
+    "max_queue_size": 1000,
+    "num_blocks": 1024,
+    "block_size": 16,
+    "max_seq_length": 4096
+}
+
+
+def configure_service(**kwargs):
+    """Configure the service with custom parameters."""
+    global service_config
+    service_config.update(kwargs)
+
 
 @asynccontextmanager
 async def lifespan(app):
     """Application lifespan manager."""
     global service
     
-    # Startup
-    service = OpenAICompatibleService()
+    # Startup with configured parameters
+    service = OpenAICompatibleService(**service_config)
     await service.startup()
     
     yield
