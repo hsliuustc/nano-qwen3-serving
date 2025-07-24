@@ -58,44 +58,14 @@ python -m nano_qwen3_serving --device mps
 python -m nano_qwen3_serving --device cpu
 ```
 
-## 🔧 Installation
-
-### CUDA Support
-
-Install PyTorch with CUDA support:
-
-```bash
-# For CUDA 11.8
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
-# For CUDA 12.1
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-
-# For CUDA 12.4
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-```
-
-### MPS Support (Apple Silicon)
-
-```bash
-# Install PyTorch with MPS support
-pip install torch torchvision torchaudio
-```
-
-### CPU Only
-
-```bash
-# Install PyTorch CPU version
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-```
 
 ## 📊 Performance Comparison
 
-| Backend | Qwen3-0.6B | Qwen3-1.5B | Qwen3-3B | Memory Usage |
-|---------|------------|------------|----------|--------------|
-| CUDA    | ~50-100    | ~30-60     | ~20-40   | ~2-8GB       |
-| MPS     | ~25-50     | ~15-30     | ~8-20    | ~2-8GB       |
-| CPU     | ~5-15      | ~3-8       | ~2-5     | ~4-16GB      |
+| Backend | Qwen3-0.6B | 
+|---------|------------|
+| CUDA    | ~30        |
+| MPS     | ~25        |
+
 
 *Performance in tokens/second. Actual performance depends on hardware configuration.*
 

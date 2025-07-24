@@ -51,14 +51,20 @@ class DeviceManager:
                 return "cpu"
         
         # Validate requested device
-        if device == "cuda" and not self._is_cuda_available():
-            logger.warning("CUDA requested but not available, falling back to CPU")
-            return "cpu"
-        elif device == "mps" and not self._is_mps_available():
-            logger.warning("MPS requested but not available, falling back to CPU")
-            return "cpu"
+        if device == "cuda":
+            if self._is_cuda_available():
+                return "cuda"
+            else:
+                logger.warning("CUDA requested but not available, falling back to CPU")
+                return "cpu"
+        elif device == "mps":
+            if self._is_mps_available():
+                return "mps"
+            else:
+                logger.warning("MPS requested but not available, falling back to CPU")
+                return "cpu"
         elif device == "cpu":
-            return "cpu"
+                return "cpu"
         else:
             logger.warning(f"Unknown device '{device}', falling back to CPU")
             return "cpu"
