@@ -24,9 +24,9 @@ class LLM:
     
     def __init__(
         self,
-        model_name: str = "Qwen/Qwen3-0.6B",
-        device: str = "mps",
-        dtype: str = "float16",
+        model_name: str = "/zx_data1/nano-vllm/models/Qwen3-0.6B",  # "Qwen/Qwen3-0.6B",
+        device: str = "auto",
+        dtype: Optional[str] = None,
         max_queue_size: int = 1000,
         num_blocks: int = 1024,
         block_size: int = 16,
@@ -37,8 +37,8 @@ class LLM:
         
         Args:
             model_name: Name of the model to load
-            device: Device to run inference on
-            dtype: Data type for model weights
+            device: Device to run inference on ("auto", "mps", "cuda", "cpu")
+            dtype: Data type for model weights (None for auto-detection)
             max_queue_size: Maximum number of requests in queue
             num_blocks: Number of memory blocks for KV cache
             block_size: Size of each memory block
@@ -58,7 +58,7 @@ class LLM:
             max_seq_length=max_seq_length
         )
         
-        logger.info(f"LLM initialized with {model_name} on {device}")
+        logger.info(f"LLM initialized with {model_name} on {self.engine.model_runner.device}")
     
     def generate(
         self,

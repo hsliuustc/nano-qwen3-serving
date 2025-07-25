@@ -9,8 +9,11 @@ from .block_manager import BlockManager
 from .sampling_params import SamplingParams
 from .batch_state import BatchState, BatchUpdate, SequenceInfo
 from .continuous_batching_scheduler import ContinuousBatchingScheduler
+from .llm import LLM
+from .device_manager import DeviceManager
 
 __all__ = [
+    "LLM",
     "LLMEngine",
     "ModelRunner", 
     "Scheduler",
@@ -20,5 +23,6 @@ __all__ = [
     "BatchState",
     "BatchUpdate", 
     "SequenceInfo",
-    "ContinuousBatchingScheduler"
+    "ContinuousBatchingScheduler",
+    "DeviceManager"
 ] 

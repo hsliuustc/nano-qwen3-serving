@@ -63,7 +63,7 @@ class AsyncLLM:
             worker_count=worker_count
         )
         
-        logger.info(f"AsyncLLM initialized with {model_name} on {device}")
+        logger.info(f"AsyncLLM initialized with {model_name} on {self.async_engine.engine.model_runner.device}")
     
     async def generate(
         self,

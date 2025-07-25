@@ -1,5 +1,5 @@
 """
-Model execution and inference on MPS.
+Model execution and inference on multiple backends (MPS, CUDA, CPU).
 """
 
 import torch
@@ -9,21 +9,23 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from loguru import logger
 import time
+from .device_manager import DeviceManager
 
 
 class ModelRunner:
     """
-    Handles model execution and inference on MPS.
+    Handles model execution and inference on multiple backends.
     
     This class manages the actual forward passes through the model,
     including attention computation, KV cache management, and sampling.
+    Supports MPS (Apple Silicon), CUDA (NVIDIA), and CPU backends.
     """
     
     def __init__(
         self,
-        model_name: str = "Qwen/Qwen3-0.6B",
-        device: str = "mps",
-        dtype: torch.dtype = torch.float16,
+        model_name: str = "/zx_data1/nano-vllm/models/Qwen3-0.6B",  # "Qwen/Qwen3-0.6B",
+        device: str = "auto",
+        dtype: Optional[torch.dtype] = None,
         use_cache: bool = True,
         max_seq_length: int = 4096
     ):
@@ -32,16 +34,24 @@ class ModelRunner:
         
         Args:
             model_name: Name or path of the model to load
-            device: Device to run inference on
-            dtype: Data type for model weights
+            device: Device to run inference on ("auto", "mps", "cuda", "cpu")
+            dtype: Data type for model weights (None for auto-detection)
             use_cache: Whether to use KV cache
             max_seq_length: Maximum sequence length
         """
         self.model_name = model_name
-        self.device = device
-        self.dtype = dtype
         self.use_cache = use_cache
         self.max_seq_length = max_seq_length
+        
+        # Initialize device manager
+        self.device_manager = DeviceManager(device)
+        self.device = self.device_manager.device
+        
+        # Set dtype (auto-detect if not provided)
+        if dtype is None:
+            self.dtype = self.device_manager.get_dtype()
+        else:
+            self.dtype = dtype
         
         # Load model and tokenizer
         self.model = None
@@ -56,7 +66,7 @@ class ModelRunner:
         self.inference_times = []
         self.tokens_generated = 0
         
-        logger.info(f"ModelRunner initialized with {model_name} on {device}")
+        logger.info(f"ModelRunner initialized with {model_name} on {self.device}")
     
     def _load_model(self):
         """Load the model and tokenizer."""
@@ -79,9 +89,9 @@ class ModelRunner:
             # Set model to evaluation mode
             self.model.eval()
             
-            # Move to device if not already done
-            if self.device != "auto" and self.model is not None:
-                self.model = self.model.to(self.device)
+            # Apply device-specific optimizations
+            if self.model is not None:
+                self.model = self.device_manager.optimize_for_device(self.model)
             
             logger.info(f"Model loaded successfully. Parameters: {self.model.num_parameters():,}")
             
@@ -292,7 +302,9 @@ class ModelRunner:
                 "average_inference_time": 0.0,
                 "total_inference_time": 0.0,
                 "tokens_generated": self.tokens_generated,
-                "inference_count": 0
+                "inference_count": 0,
+                "tokens_per_second": 0.0,
+                "device_stats": self.device_manager.get_memory_stats()
             }
         
         avg_time = sum(self.inference_times) / len(self.inference_times)
@@ -303,7 +315,8 @@ class ModelRunner:
             "total_inference_time": total_time,
             "tokens_generated": self.tokens_generated,
             "inference_count": len(self.inference_times),
-            "tokens_per_second": self.tokens_generated / total_time if total_time > 0 else 0.0
+            "tokens_per_second": self.tokens_generated / total_time if total_time > 0 else 0.0,
+            "device_stats": self.device_manager.get_memory_stats()
         }
     
     def clear_performance_stats(self) -> None:
@@ -320,12 +333,14 @@ class ModelRunner:
         logger.info("Applying inference optimizations...")
         
         # 1. Enable torch.compile for faster inference (PyTorch 2.0+)
-        try:
-            if hasattr(torch, 'compile'):
-                self.model = torch.compile(self.model, mode="reduce-overhead")
-                logger.info("Applied torch.compile optimization")
-        except Exception as e:
-            logger.warning(f"torch.compile not available: {e}")
+        # Disabled due to CUDA Graph compatibility issues
+        # try:
+        #     if hasattr(torch, 'compile'):
+        #         self.model = torch.compile(self.model, mode="reduce-overhead")
+        #         logger.info("Applied torch.compile optimization")
+        # except Exception as e:
+        #     logger.warning(f"torch.compile not available: {e}")
+        logger.info("torch.compile disabled for CUDA Graph compatibility")
         
         # 2. Enable memory efficient attention if available
         try:
@@ -343,21 +358,14 @@ class ModelRunner:
             self.model.gradient_checkpointing_enable()
             logger.info("Enabled gradient checkpointing")
         
-        # 5. Optimize for MPS specific optimizations
-        if self.device == "mps":
-            self._optimize_for_mps()
+        # 5. Device-specific optimizations are handled by DeviceManager
+        # Additional optimizations can be applied here if needed
     
     def _optimize_for_mps(self) -> None:
-        """Apply MPS-specific optimizations."""
-        # Enable MPS optimizations
-        if hasattr(torch.mps, 'set_per_process_memory_fraction'):
-            torch.mps.set_per_process_memory_fraction(0.9)  # Use 90% of GPU memory
-        
-        # Set optimal memory format for MPS
-        if hasattr(self.model, 'half'):
-            self.model = self.model.half()
-        
-        logger.info("Applied MPS-specific optimizations")
+        """Apply MPS-specific optimizations (legacy method)."""
+        # This method is kept for backward compatibility
+        # Device-specific optimizations are now handled by DeviceManager
+        logger.info("MPS optimizations handled by DeviceManager")
     
     def enable_fast_inference(self) -> None:
         """Enable fast inference mode with aggressive optimizations."""

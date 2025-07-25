@@ -12,7 +12,10 @@ from nano_qwen3_serving.core.scheduler import Scheduler, RequestPriority
 @pytest.fixture(scope="session")
 def device():
     """Get the device to use for testing."""
-    if torch.backends.mps.is_available():
+    # Auto-detect best available device
+    if torch.cuda.is_available() and torch.cuda.device_count() > 0:
+        return "cuda"
+    elif torch.backends.mps.is_available():
         return "mps"
     else:
         return "cpu"

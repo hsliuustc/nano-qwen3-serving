@@ -31,8 +31,8 @@ class BlockManager:
         self,
         num_blocks: int = 1024,
         block_size: int = 16,
-        device: str = "mps",
-        dtype: torch.dtype = torch.float16
+        device: str = "auto",
+        dtype: Optional[torch.dtype] = None
     ):
         """
         Initialize the block manager.
@@ -40,13 +40,22 @@ class BlockManager:
         Args:
             num_blocks: Number of memory blocks to allocate
             block_size: Size of each block in tokens
-            device: Device to allocate memory on
-            dtype: Data type for the memory blocks
+            device: Device to allocate memory on ("auto", "mps", "cuda", "cpu")
+            dtype: Data type for the memory blocks (None for auto-detection)
         """
         self.num_blocks = num_blocks
         self.block_size = block_size
-        self.device = device
-        self.dtype = dtype
+        
+        # Initialize device manager for device detection
+        from .device_manager import DeviceManager
+        self.device_manager = DeviceManager(device)
+        self.device = self.device_manager.device
+        
+        # Set dtype (auto-detect if not provided)
+        if dtype is None:
+            self.dtype = self.device_manager.get_dtype()
+        else:
+            self.dtype = dtype
         
         # Initialize memory blocks
         self.blocks: List[MemoryBlock] = []
@@ -149,13 +158,17 @@ class BlockManager:
         allocated_blocks = total_blocks - len(self.free_blocks)
         utilization = allocated_blocks / total_blocks if total_blocks > 0 else 0.0
         
+        # Get device-specific memory stats
+        device_stats = self.device_manager.get_memory_stats()
+        
         return {
             "total_blocks": total_blocks,
             "allocated_blocks": allocated_blocks,
             "free_blocks": len(self.free_blocks),
             "utilization": utilization,
             "allocated_memory": self.allocated_memory,
-            "total_memory": self.total_memory
+            "total_memory": self.total_memory,
+            "device_stats": device_stats
         }
     
     def create_kv_cache(
@@ -181,7 +194,7 @@ class BlockManager:
             dtype = self.dtype
         
         cache_shape = (num_layers, 2, self.num_blocks, num_heads, self.block_size, head_dim)
-        cache = torch.zeros(cache_shape, dtype=dtype, device=self.device)
+        cache = torch.zeros(cache_shape, dtype=dtype, device=self.device_manager.get_device())
         
         logger.info(f"Created KV cache with shape {cache_shape}")
         return cache

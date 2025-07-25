@@ -1,3 +1,9 @@
+# PyTorch - Choose appropriate version for your backend
+# CUDA 11.8: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+# CUDA 12.1: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# CUDA 12.4: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+# CPU only: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# MPS (Apple Silicon): pip install torch torchvision torchaudio
 torch>=2.0.0
 transformers>=4.35.0
 accelerate>=0.20.0

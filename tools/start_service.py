@@ -68,8 +68,8 @@ Examples:
     )
     parser.add_argument(
         "--device",
-        default="mps",
-        help="Device to use (default: mps)"
+        default="auto",
+        help="Device to use"
     )
     parser.add_argument(
         "--dtype",
