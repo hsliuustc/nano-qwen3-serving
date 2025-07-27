@@ -10,6 +10,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from loguru import logger
 import time
 from .device_manager import DeviceManager
+from .acceleration import ModelAccelerator, AccelerationConfig, create_acceleration_config, benchmark_acceleration
 
 
 class ModelRunner:
@@ -27,7 +28,8 @@ class ModelRunner:
         device: str = "auto",
         dtype: Optional[torch.dtype] = None,
         use_cache: bool = True,
-        max_seq_length: int = 4096
+        max_seq_length: int = 4096,
+        acceleration_config: Optional[AccelerationConfig] = None
     ):
         """
         Initialize the model runner.
@@ -38,10 +40,18 @@ class ModelRunner:
             dtype: Data type for model weights (None for auto-detection)
             use_cache: Whether to use KV cache
             max_seq_length: Maximum sequence length
+            acceleration_config: Configuration for model acceleration techniques
         """
         self.model_name = model_name
         self.use_cache = use_cache
         self.max_seq_length = max_seq_length
+        
+        # Initialize acceleration
+        if acceleration_config is None:
+            # Create default acceleration config
+            acceleration_config = create_acceleration_config()
+        self.acceleration_config = acceleration_config
+        self.accelerator = ModelAccelerator(acceleration_config)
         
         # Initialize device manager
         self.device_manager = DeviceManager(device)
@@ -53,11 +63,6 @@ class ModelRunner:
         else:
             self.dtype = dtype
         
-        # Load model and tokenizer
-        self.model = None
-        self.tokenizer = None
-        self._load_model()
-        
         # KV cache
         self.kv_cache = None
         self.cache_enabled = use_cache
@@ -66,7 +71,21 @@ class ModelRunner:
         self.inference_times = []
         self.tokens_generated = 0
         
+        # Acceleration tracking
+        self.acceleration_stats = {
+            "applied_optimizations": [],
+            "memory_reductions": {},
+            "performance_estimates": {},
+            "benchmark_results": None
+        }
+        
+        # Load model and tokenizer
+        self.model = None
+        self.tokenizer = None
+        self._load_model()
+        
         logger.info(f"ModelRunner initialized with {model_name} on {self.device}")
+        logger.info(f"Acceleration optimizations: {', '.join(self.accelerator.applied_optimizations)}")
     
     def _load_model(self):
         """Load the model and tokenizer."""
@@ -93,7 +112,24 @@ class ModelRunner:
             if self.model is not None:
                 self.model = self.device_manager.optimize_for_device(self.model)
             
-            logger.info(f"Model loaded successfully. Parameters: {self.model.num_parameters():,}")
+            # Apply acceleration techniques
+            if self.model is not None:
+                self.model = self.accelerator.apply_accelerations(self.model, self.device)
+                
+                # Update acceleration stats
+                self.acceleration_stats["applied_optimizations"] = self.accelerator.applied_optimizations
+                self.acceleration_stats["memory_reductions"] = self.accelerator.get_memory_footprint_reduction()
+                self.acceleration_stats["performance_estimates"] = self.accelerator.get_performance_estimates()
+            
+            logger.info(f"Model loaded successfully. Parameters: {self.model.num_parameters()}")
+            
+            # Log acceleration benefits
+            if self.acceleration_stats["applied_optimizations"]:
+                logger.info(f"Applied {len(self.acceleration_stats['applied_optimizations'])} acceleration optimizations")
+                for opt, reduction in self.acceleration_stats["memory_reductions"].items():
+                    logger.info(f"  {opt}: ~{reduction:.1f}% memory reduction")
+                for opt, speedup in self.acceleration_stats["performance_estimates"].items():
+                    logger.info(f"  {opt}: ~{speedup:.1f}x speedup")
             
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
@@ -286,7 +322,7 @@ class ModelRunner:
         if self.model is None:
             return {"error": "Model not loaded"}
         
-        return {
+        base_info = {
             "model_name": self.model_name,
             "device": self.device,
             "dtype": str(self.dtype),
@@ -294,6 +330,16 @@ class ModelRunner:
             "max_seq_length": self.max_seq_length,
             "use_cache": self.cache_enabled
         }
+        
+        # Add acceleration information
+        acceleration_info = self.get_acceleration_info()
+        base_info.update({
+            "acceleration": acceleration_info,
+            "memory_usage": self.estimate_memory_usage(),
+            "quantization": self.get_quantization_info()
+        })
+        
+        return base_info
     
     def get_performance_stats(self) -> Dict[str, Any]:
         """Get performance statistics."""
@@ -447,3 +493,149 @@ class ModelRunner:
         except Exception as e:
             logger.error(f"Batch model inference failed: {e}")
             raise 
+    
+    def benchmark_performance(
+        self,
+        sample_text: str = "Hello, how are you?",
+        num_iterations: int = 10
+    ) -> Dict[str, Any]:
+        """
+        Benchmark model performance with current accelerations.
+        
+        Args:
+            sample_text: Sample text for benchmarking
+            num_iterations: Number of iterations to run
+            
+        Returns:
+            Comprehensive benchmark results
+        """
+        logger.info(f"Starting performance benchmark with {num_iterations} iterations...")
+        
+        # Tokenize sample text
+        input_ids = self.tokenize(sample_text)
+        
+        # Run benchmark
+        benchmark_results = benchmark_acceleration(
+            self.model,
+            input_ids,
+            num_iterations
+        )
+        
+        # Add acceleration-specific metrics
+        benchmark_results.update({
+            "applied_optimizations": self.acceleration_stats["applied_optimizations"],
+            "memory_reductions": self.acceleration_stats["memory_reductions"],
+            "performance_estimates": self.acceleration_stats["performance_estimates"],
+            "device": str(self.device),
+            "dtype": str(self.dtype),
+            "quantization": self.acceleration_config.quantization.value,
+            "sample_text": sample_text,
+            "input_length": input_ids.shape[1]
+        })
+        
+        # Store results
+        self.acceleration_stats["benchmark_results"] = benchmark_results
+        
+        logger.info(f"Benchmark completed. Average inference time: {benchmark_results['avg_inference_time']:.4f}s")
+        logger.info(f"Tokens per second: {benchmark_results['tokens_per_second']:.2f}")
+        
+        return benchmark_results
+    
+    def get_acceleration_info(self) -> Dict[str, Any]:
+        """Get comprehensive information about applied accelerations."""
+        return {
+            "acceleration_config": {
+                "quantization": self.acceleration_config.quantization.value,
+                "use_flash_attention": self.acceleration_config.use_flash_attention,
+                "use_torch_compile": self.acceleration_config.use_torch_compile,
+                "compile_mode": self.acceleration_config.compile_mode,
+                "use_channels_last": self.acceleration_config.use_channels_last,
+                "use_gradient_checkpointing": self.acceleration_config.use_gradient_checkpointing,
+                "use_fused_kernels": self.acceleration_config.use_fused_kernels
+            },
+            "applied_optimizations": self.acceleration_stats["applied_optimizations"],
+            "memory_reductions": self.acceleration_stats["memory_reductions"],
+            "performance_estimates": self.acceleration_stats["performance_estimates"],
+            "benchmark_results": self.acceleration_stats["benchmark_results"]
+        }
+    
+    def update_acceleration_config(self, new_config: AccelerationConfig) -> None:
+        """
+        Update acceleration configuration and reapply optimizations.
+        
+        Note: This requires reloading the model, which can be expensive.
+        
+        Args:
+            new_config: New acceleration configuration
+        """
+        logger.info("Updating acceleration configuration...")
+        
+        old_config = self.acceleration_config
+        self.acceleration_config = new_config
+        self.accelerator = ModelAccelerator(new_config)
+        
+        # Reload and reapply optimizations
+        try:
+            self._load_model()
+            logger.info("Acceleration configuration updated successfully")
+        except Exception as e:
+            # Rollback on failure
+            logger.error(f"Failed to update acceleration config: {e}")
+            self.acceleration_config = old_config
+            self.accelerator = ModelAccelerator(old_config)
+            self._load_model()
+            raise
+    
+    def get_quantization_info(self) -> Dict[str, Any]:
+        """Get detailed information about quantization."""
+        info = {
+            "quantization_type": self.acceleration_config.quantization.value,
+            "is_quantized": self.acceleration_config.quantization != "none",
+            "supported_types": [q.value for q in self.acceleration_config.quantization.__class__]
+        }
+        
+        if self.model is not None:
+            # Check if model is actually quantized
+            quantized_layers = []
+            for name, module in self.model.named_modules():
+                if hasattr(module, 'weight') and hasattr(module.weight, 'dtype'):
+                    if 'int' in str(module.weight.dtype) or 'qint' in str(module.weight.dtype):
+                        quantized_layers.append((name, str(module.weight.dtype)))
+            
+            info["quantized_layers"] = quantized_layers
+            info["num_quantized_layers"] = len(quantized_layers)
+        
+        return info
+    
+    def estimate_memory_usage(self) -> Dict[str, Any]:
+        """Estimate memory usage with and without accelerations."""
+        if self.model is None:
+            return {"error": "Model not loaded"}
+        
+        # Calculate base model size
+        param_count = sum(p.numel() for p in self.model.parameters())
+        
+        # Estimate sizes based on dtype
+        if self.dtype == torch.float32:
+            base_size_mb = param_count * 4 / (1024 * 1024)  # 4 bytes per float32
+        elif self.dtype == torch.float16 or self.dtype == torch.bfloat16:
+            base_size_mb = param_count * 2 / (1024 * 1024)  # 2 bytes per float16/bfloat16
+        else:
+            base_size_mb = param_count * 4 / (1024 * 1024)  # Default to float32
+        
+        # Calculate memory reductions
+        total_reduction = 0.0
+        for reduction in self.acceleration_stats["memory_reductions"].values():
+            total_reduction = max(total_reduction, reduction)  # Take max, not sum (optimizations overlap)
+        
+        accelerated_size_mb = base_size_mb * (1.0 - total_reduction / 100.0)
+        
+        return {
+            "base_model_size_mb": base_size_mb,
+            "accelerated_model_size_mb": accelerated_size_mb,
+            "memory_saved_mb": base_size_mb - accelerated_size_mb,
+            "memory_reduction_percent": total_reduction,
+            "parameter_count": param_count,
+            "dtype": str(self.dtype),
+            "applied_optimizations": self.acceleration_stats["applied_optimizations"]
+        }
