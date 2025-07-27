@@ -5,23 +5,22 @@ Performance testing script for nano Qwen3 serving engine.
 
 import time
 import json
-from typing import List, Dict, Any
-from loguru import logger
+import argparse
 
 from nano_qwen3_serving import LLM, SamplingParams
 
 
-def run_performance_test():
+def run_performance_test(device: str = "mps"):
     """Run comprehensive performance tests."""
     print("🚀 Nano Qwen3 Serving Engine - Performance Test")
     print("=" * 60)
     
     # Initialize LLM
-    print("📥 Initializing LLM...")
+    print(f"📥 Initializing LLM...(device={device})")
     start_time = time.time()
     llm = LLM(
-        model_name="Qwen/Qwen3-0.6B",
-        device="mps",
+        model_name= "/zx_data1/nano-vllm/models/Qwen3-0.6B", # "Qwen/Qwen3-0.6B",
+        device=device,
         dtype="float16"
     )
     init_time = time.time() - start_time
@@ -145,4 +144,7 @@ def run_performance_test():
 
 
 if __name__ == "__main__":
-    run_performance_test() 
+    parser = argparse.ArgumentParser(description="nano Qwen3 Serving Engine performance test")
+    parser.add_argument("--device", type=str, default="mps", help="device (e.g. cpu, cuda, mps, auto)")
+    args = parser.parse_args()
+    run_performance_test(device=args.device) 

@@ -1,7 +1,7 @@
 """
 Nano Qwen3 Serving Engine
 
-A lightweight, efficient LLM serving engine optimized for Qwen3 models on Apple MPS.
+A lightweight, efficient LLM serving engine with multi-backend support (CUDA, MPS, CPU) for Qwen3 models.
 """
 
 from .core import LLM, LLMEngine, ModelRunner, Scheduler, BlockManager, SamplingParams
